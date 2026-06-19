@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Дашборд продаж</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --ink: #182230;
+      --muted: #667085;
+      --line: #d7dee8;
+      --blue: #2454a6;
+      --teal: #087f73;
+      --amber: #b86b00;
+      --red: #b42318;
+      --green: #157347;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 18px 34px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 10px;
+      margin: 12px 0;
+    }
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .metric, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .metric {
+      padding: 15px;
+      min-height: 106px;
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .metric .value {
+      font-size: 27px;
+      font-weight: 700;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+    .metric .note {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+    .panel {
+      padding: 15px;
+      min-width: 0;
+    }
+    .panel.wide { grid-column: 1 / -1; }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 330px;
+    }
+    .wide .chart-wrap { height: 360px; }
+    .chart-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: #111827;
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      transform: translate(-50%, -115%);
+      opacity: 0;
+      transition: opacity .08s linear;
+      white-space: nowrap;
+      z-index: 3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 7px;
+      text-align: right;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #fafbfc;
+    }
+    .table-scroll {
+      overflow: auto;
+      max-height: 430px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-top: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .table-scroll table {
+      margin-top: 0;
+      min-width: 760px;
+    }
+    .matrix-table th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .matrix-table th:first-child,
+    .matrix-table td:first-child {
+      position: sticky;
+      left: 0;
+      min-width: 260px;
+      max-width: 340px;
+      background: #fff;
+      z-index: 1;
+    }
+    .matrix-table th:first-child {
+      background: #fafbfc;
+      z-index: 3;
+    }
+    .matrix-table .total-col {
+      font-weight: 700;
+      background: #f8fafc;
+      color: var(--ink);
+    }
+    .matrix-table .zero {
+      color: #98a2b3;
+    }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 24px;
+    }
+    @media (max-width: 900px) {
+      header { display: block; }
+      .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .chart-wrap, .wide .chart-wrap { height: 310px; }
+      .hint { text-align: left; }
+    }
+    @media (max-width: 560px) {
+      .page { padding: 16px 10px 26px; }
+      .filters { grid-template-columns: 1fr; }
+      .metric .value { font-size: 23px; }
+      h1 { font-size: 24px; }
+      .panel { padding: 12px; }
+      .chart-wrap, .wide .chart-wrap { height: 280px; }
+      th, td { padding: 7px 6px; font-size: 12px; }
+      .table-scroll { max-height: 360px; }
+      .matrix-table th:first-child,
+      .matrix-table td:first-child {
+        min-width: 180px;
+        max-width: 220px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>Дашборд продаж</h1>
+        <p class="subtitle">Выручка по месяцам, клиентам и менеджерам. Учитываются только документы выручки, данные встроены в файл, внешних запросов нет.</p>
+      </div>
+    </header>
+
+    <section class="filters" aria-label="Фильтры">
+      <label>Год<select id="yearFilter"></select></label>
+      <label>Клиент<select id="clientFilter"></select></label>
+      <label>Менеджер<select id="managerFilter"></select></label>
+      <label>Вид документа<select id="docFilter"></select></label>
+    </section>
+
+    <section class="metrics" aria-label="Ключевые показатели">
+      <article class="metric">
+        <div class="label">Общая выручка</div>
+        <div class="value" id="totalRevenue">0 ₽</div>
+        <div class="note">Сумма по выбранному периоду</div>
+      </article>
+      <article class="metric">
+        <div class="label">Средний чек</div>
+        <div class="value" id="averageCheck">0 ₽</div>
+        <div class="note">Выручка / количество чеков</div>
+      </article>
+      <article class="metric">
+        <div class="label">Количество чеков</div>
+        <div class="value" id="checksCount">0</div>
+        <div class="note">Строки выручки с датой и числовой суммой</div>
+      </article>
+    </section>
+
+    <section class="grid">
+      <article class="panel wide">
+        <div class="panel-head">
+          <h2>Выручка по месяцам</h2>
+          <div class="hint">Наведи курсор на точку</div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="monthChart" class="chart-svg" role="img" aria-label="Выручка по месяцам"></svg>
+          <div class="tooltip" id="monthTooltip"></div>
+        </div>
+        <table>
+          <thead><tr><th>Месяц</th><th>Выручка, ₽</th></tr></thead>
+          <tbody id="monthRows"></tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Выручка по клиентам</h2>
+          <div class="hint">Топ-12 по выручке</div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="clientChart" class="chart-svg" role="img" aria-label="Выручка по клиентам"></svg>
+          <div class="tooltip" id="clientTooltip"></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Выручка по менеджерам</h2>
+          <div class="hint">Топ-12 по выручке</div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="managerChart" class="chart-svg" role="img" aria-label="Выручка по менеджерам"></svg>
+          <div class="tooltip" id="managerTooltip"></div>
+        </div>
+      </article>
+
+      <article class="panel wide">
+        <div class="panel-head">
+          <h2>Выручка клиентов по месяцам</h2>
+          <div class="hint">Сумма выручки по каждому клиенту и месяцу</div>
+        </div>
+        <div class="table-scroll">
+          <table class="matrix-table" id="clientMonthTable"></table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script id="dashboardData" type="application/json">{"rows": [{"date": "2026-01-01", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 1201.16}, {"date": "2026-01-04", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 20474.0}, {"date": "2026-01-05", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 2148.9}, {"date": "2026-01-11", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 58022.0}, {"date": "2026-01-12", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 1601.14}, {"date": "2026-01-15", "month": "2026-01", "client": "ЦЫН ФЫН ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 24400.0}, {"date": "2026-01-15", "month": "2026-01", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 45922.98}, {"date": "2026-01-17", "month": "2026-01", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 6750.0}, {"date": "2026-01-18", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 98936.0}, {"date": "2026-01-19", "month": "2026-01", "client": "СКАЛКА ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 36600.0}, {"date": "2026-01-19", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 10405.27}, {"date": "2026-01-22", "month": "2026-01", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 173850.0}, {"date": "2026-01-23", "month": "2026-01", "client": "АПЕЛЬБУРГ-ПРИНТ ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 24400.0}, {"date": "2026-01-24", "month": "2026-01", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 9750.0}, {"date": "2026-01-24", "month": "2026-01", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 350.0}, {"date": "2026-01-25", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 123761.0}, {"date": "2026-01-26", "month": "2026-01", "client": "ЯРКО ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 20984.0}, {"date": "2026-01-26", "month": "2026-01", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 4942.65}, {"date": "2026-01-29", "month": "2026-01", "client": "ЗЕТА КОРП. ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 20300.0}, {"date": "2026-01-29", "month": "2026-01", "client": "РК ЦСКА АНО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 21200.0}, {"date": "2026-01-29", "month": "2026-01", "client": "Здорик Елена Анатольевна ИП", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 15300.0}, {"date": "2026-01-29", "month": "2026-01", "client": "Князев Алексей Александрович", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 14800.0}, {"date": "2026-01-30", "month": "2026-01", "client": "ШКОЛА ЛЕТОВО ОАНО", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 20736.0}, {"date": "2026-01-31", "month": "2026-01", "client": "МУЗЕЙ ЗАПОВЕДНИК", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 20730.0}, {"date": "2026-01-31", "month": "2026-01", "client": "ВДНХ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 84165.0}, {"date": "2026-01-31", "month": "2026-01", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 1955431.5}, {"date": "2026-01-31", "month": "2026-01", "client": "МОСКОВСКИЙ ЗООПАРК ГАУ", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 6440.0}, {"date": "2026-01-31", "month": "2026-01", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 78892.44}, {"date": "2026-02-01", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 159963.0}, {"date": "2026-02-02", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 3470.14}, {"date": "2026-02-03", "month": "2026-02", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 104530.0}, {"date": "2026-02-05", "month": "2026-02", "client": "ВЕГА АО ТГК", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 45000.0}, {"date": "2026-02-06", "month": "2026-02", "client": "АВТОР ПРО ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 39200.0}, {"date": "2026-02-06", "month": "2026-02", "client": "НИЖЕГОРОДСКИЙ ПЛАНЕТАРИЙ ИМ. Г.М.ГРЕЧКО МАУК", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 22800.0}, {"date": "2026-02-08", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 233764.65}, {"date": "2026-02-09", "month": "2026-02", "client": "Сотина Евгения Валерьевна", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 170050.0}, {"date": "2026-02-09", "month": "2026-02", "client": "РЕШМА ФМБА РОССИИ ФГБУЗ МЦ", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 44440.0}, {"date": "2026-02-09", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 2870.72}, {"date": "2026-02-13", "month": "2026-02", "client": "ТД АСТРО-ДЕНТ ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 14250.0}, {"date": "2026-02-13", "month": "2026-02", "client": "КИСЛОРОДНАЯ ИМПЕРИЯ ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 13300.0}, {"date": "2026-02-13", "month": "2026-02", "client": "ОДАС ФАРМА ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 39500.0}, {"date": "2026-02-14", "month": "2026-02", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 11250.0}, {"date": "2026-02-15", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 263442.0}, {"date": "2026-02-15", "month": "2026-02", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 26889.06}, {"date": "2026-02-16", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 8831.42}, {"date": "2026-02-17", "month": "2026-02", "client": "Войдаков Дмитрий Евгеньевич ИП", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 52260.0}, {"date": "2026-02-20", "month": "2026-02", "client": "КОЗЛОВ ВЛАДИСЛАВ ИП", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 5500.0}, {"date": "2026-02-20", "month": "2026-02", "client": "ЭДВАНС ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 34400.0}, {"date": "2026-02-22", "month": "2026-02", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 31000.0}, {"date": "2026-02-22", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 257482.0}, {"date": "2026-02-23", "month": "2026-02", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 8524.55}, {"date": "2026-02-24", "month": "2026-02", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 41250.0}, {"date": "2026-02-24", "month": "2026-02", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 193780.0}, {"date": "2026-02-25", "month": "2026-02", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 12750.0}, {"date": "2026-02-26", "month": "2026-02", "client": "НИЖЕГОРОДСКИЙ ПЛАНЕТАРИЙ ИМ. Г.М.ГРЕЧКО МАУК", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 22800.0}, {"date": "2026-02-26", "month": "2026-02", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 39000.0}, {"date": "2026-02-28", "month": "2026-02", "client": "МЕЧТАРИУМ ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 85000.0}, {"date": "2026-02-28", "month": "2026-02", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 1731807.47}, {"date": "2026-02-28", "month": "2026-02", "client": "МУЗЕЙ ЗАПОВЕДНИК", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 35150.0}, {"date": "2026-02-28", "month": "2026-02", "client": "МОСКОВСКИЙ ЗООПАРК ГАУ", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 1360.0}, {"date": "2026-02-28", "month": "2026-02", "client": "ВДНХ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 35724.4}, {"date": "2026-02-28", "month": "2026-02", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 49263.72}, {"date": "2026-03-01", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 275302.37}, {"date": "2026-03-02", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 8861.84}, {"date": "2026-03-03", "month": "2026-03", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 84200.0}, {"date": "2026-03-04", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 50.0}, {"date": "2026-03-04", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 50.0}, {"date": "2026-03-05", "month": "2026-03", "client": "АЙКРАФТ ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 19250.0}, {"date": "2026-03-05", "month": "2026-03", "client": "ЭКОСТОМ ООО", "manager": "Попов Евгений", "documentType": "Реализация товаров и услуг", "amount": 6200.0}, {"date": "2026-03-05", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 750.0}, {"date": "2026-03-05", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 750.0}, {"date": "2026-03-06", "month": "2026-03", "client": "Мыльцев Руслан Геннадьевич ИП", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 21750.0}, {"date": "2026-03-07", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 4000.0}, {"date": "2026-03-07", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 4000.0}, {"date": "2026-03-07", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 1000.0}, {"date": "2026-03-07", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 1000.0}, {"date": "2026-03-08", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 313705.1}, {"date": "2026-03-09", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 4662.86}, {"date": "2026-03-10", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 1950.0}, {"date": "2026-03-10", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 1950.0}, {"date": "2026-03-10", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 13650.0}, {"date": "2026-03-10", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 13650.0}, {"date": "2026-03-15", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 230287.79}, {"date": "2026-03-15", "month": "2026-03", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 84672.72}, {"date": "2026-03-16", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 10007.14}, {"date": "2026-03-17", "month": "2026-03", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 155990.0}, {"date": "2026-03-19", "month": "2026-03", "client": "КАМЧАТСКИЙ ЦЕНТР РАЗВИТИЯ ТВОРЧЕСТВА ДЕТЕЙ И ЮНОШЕСТВА РАССВЕТЫ КАМЧАТКИ КГБУДО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 145000.0}, {"date": "2026-03-19", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 9000.0}, {"date": "2026-03-19", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 9000.0}, {"date": "2026-03-21", "month": "2026-03", "client": "НИЖЕГОРОДСКИЙ ПЛАНЕТАРИЙ ИМ. Г.М.ГРЕЧКО МАУК", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 41100.0}, {"date": "2026-03-21", "month": "2026-03", "client": "Балаев Алим Русланович ИП", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 16600.0}, {"date": "2026-03-21", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 750.0}, {"date": "2026-03-21", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 750.0}, {"date": "2026-03-21", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 10800.0}, {"date": "2026-03-21", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 10800.0}, {"date": "2026-03-21", "month": "2026-03", "client": "Сляднева Евгения Александровна", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 40610.0}, {"date": "2026-03-22", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 248423.95}, {"date": "2026-03-23", "month": "2026-03", "client": "МАПК (Е) АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 99000.0}, {"date": "2026-03-23", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 12966.27}, {"date": "2026-03-29", "month": "2026-03", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 2000.0}, {"date": "2026-03-29", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 212196.03}, {"date": "2026-03-30", "month": "2026-03", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 9506.66}, {"date": "2026-03-31", "month": "2026-03", "client": "ВДНХ КП", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 58149.0}, {"date": "2026-03-31", "month": "2026-03", "client": "МОСКОВСКИЙ ЗООПАРК ГАУ", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 26180.0}, {"date": "2026-03-31", "month": "2026-03", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 2570936.41}, {"date": "2026-03-31", "month": "2026-03", "client": "Музей космонавтики", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 70000.0}, {"date": "2026-03-31", "month": "2026-03", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 171850.0}, {"date": "2026-03-31", "month": "2026-03", "client": "МУЗЕЙ ЗАПОВЕДНИК", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 25700.0}, {"date": "2026-03-31", "month": "2026-03", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 77532.18}, {"date": "2026-04-01", "month": "2026-04", "client": "ООО \"НАТУРАЛЬНЫЕ СЛАДОСТИ\"", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Реализация товаров и услуг", "amount": 9945.0}, {"date": "2026-04-03", "month": "2026-04", "client": "Сотина Евгения Валерьевна", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 238500.0}, {"date": "2026-04-03", "month": "2026-04", "client": "МЭДЖИККИДС ООО", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 8100.0}, {"date": "2026-04-03", "month": "2026-04", "client": "ВЕГА АО ТГК", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 45000.0}, {"date": "2026-04-03", "month": "2026-04", "client": "ВЫМПЕЛДЕНТ-А ООО", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 5250.0}, {"date": "2026-04-03", "month": "2026-04", "client": "КОЗЛОВ ВЛАДИСЛАВ ИП", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 11000.0}, {"date": "2026-04-05", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 238228.91}, {"date": "2026-04-06", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 7999.93}, {"date": "2026-04-07", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 2150.0}, {"date": "2026-04-07", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 28700.0}, {"date": "2026-04-07", "month": "2026-04", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 140370.0}, {"date": "2026-04-08", "month": "2026-04", "client": "АВТОР ПРО ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 40700.0}, {"date": "2026-04-08", "month": "2026-04", "client": "Князев Алексей Александрович", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 18550.0}, {"date": "2026-04-08", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 5150.0}, {"date": "2026-04-08", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 19600.0}, {"date": "2026-04-10", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 9800.0}, {"date": "2026-04-10", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 350.0}, {"date": "2026-04-11", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 13550.0}, {"date": "2026-04-11", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 450.0}, {"date": "2026-04-12", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 276597.89}, {"date": "2026-04-13", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 4000.0}, {"date": "2026-04-13", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 7733.43}, {"date": "2026-04-14", "month": "2026-04", "client": "Пономарева Кристина Владимировна ИП", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 25000.0}, {"date": "2026-04-15", "month": "2026-04", "client": "ФОРМУЛА С88 ООО", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 67760.0}, {"date": "2026-04-15", "month": "2026-04", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 49758.2}, {"date": "2026-04-17", "month": "2026-04", "client": "Полные Полки-Сытые Волки, ООО.", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 265169.28}, {"date": "2026-04-17", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 11900.0}, {"date": "2026-04-17", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 300.0}, {"date": "2026-04-19", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 309003.57}, {"date": "2026-04-20", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 11062.58}, {"date": "2026-04-21", "month": "2026-04", "client": "НИУ МЭИ ФГБОУ ВО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 408000.0}, {"date": "2026-04-21", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 10.0}, {"date": "2026-04-21", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 4000.0}, {"date": "2026-04-21", "month": "2026-04", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 195800.0}, {"date": "2026-04-23", "month": "2026-04", "client": "Дерр Дмитрий Андреевич ИП", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 25200.0}, {"date": "2026-04-25", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 1800.0}, {"date": "2026-04-25", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 21000.0}, {"date": "2026-04-26", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 233651.07}, {"date": "2026-04-27", "month": "2026-04", "client": "МАРТ ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 34500.0}, {"date": "2026-04-27", "month": "2026-04", "client": "МАРТ ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 34500.0}, {"date": "2026-04-27", "month": "2026-04", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 9340.89}, {"date": "2026-04-30", "month": "2026-04", "client": "Кобрусев Степан Сергеевич", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 11900.0}, {"date": "2026-04-30", "month": "2026-04", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 2303664.02}, {"date": "2026-04-30", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 400.0}, {"date": "2026-04-30", "month": "2026-04", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 10150.0}, {"date": "2026-04-30", "month": "2026-04", "client": "МУЗЕЙ ЗАПОВЕДНИК", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 16440.0}, {"date": "2026-04-30", "month": "2026-04", "client": "ВДНХ КП", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 105716.0}, {"date": "2026-04-30", "month": "2026-04", "client": "Музей космонавтики", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 42000.0}, {"date": "2026-04-30", "month": "2026-04", "client": "МОСКОВСКИЙ ЗООПАРК ГАУ", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 29240.0}, {"date": "2026-04-30", "month": "2026-04", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 82914.84}, {"date": "2026-04-30", "month": "2026-04", "client": "ГЛОБУС ЧОУ", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 7350.0}, {"date": "2026-05-03", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 175177.5}, {"date": "2026-05-04", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 11919.8}, {"date": "2026-05-05", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 7500.0}, {"date": "2026-05-05", "month": "2026-05", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 165920.0}, {"date": "2026-05-06", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 6000.0}, {"date": "2026-05-07", "month": "2026-05", "client": "ПОЛИМЕР МАРИН ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 11000.0}, {"date": "2026-05-08", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 5600.0}, {"date": "2026-05-08", "month": "2026-05", "client": "ГРУППА-7 ООО", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 10000.0}, {"date": "2026-05-10", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 142604.28}, {"date": "2026-05-11", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 3620.7}, {"date": "2026-05-15", "month": "2026-05", "client": "Лабохо Сергей Анатольевич", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 14912.5}, {"date": "2026-05-15", "month": "2026-05", "client": "Полные Полки-Сытые Волки, ООО.", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 173074.56}, {"date": "2026-05-15", "month": "2026-05", "client": "ГЛОБУС ЧОУ", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 3850.0}, {"date": "2026-05-15", "month": "2026-05", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 44392.0}, {"date": "2026-05-16", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 4000.0}, {"date": "2026-05-17", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 172924.62}, {"date": "2026-05-18", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 4336.52}, {"date": "2026-05-19", "month": "2026-05", "client": "ПЛАНЕТАРИЙ АО", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 126130.0}, {"date": "2026-05-20", "month": "2026-05", "client": "Мыльцев Руслан Геннадьевич ИП", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 21750.0}, {"date": "2026-05-20", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 12150.0}, {"date": "2026-05-22", "month": "2026-05", "client": "ПОЛЕТ ООО", "manager": "Остапенко Виктория", "documentType": "Реализация товаров и услуг", "amount": 99000.0}, {"date": "2026-05-22", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 28000.0}, {"date": "2026-05-24", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 124224.0}, {"date": "2026-05-25", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 300.0}, {"date": "2026-05-25", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 6352.13}, {"date": "2026-05-26", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 17200.0}, {"date": "2026-05-28", "month": "2026-05", "client": "НИЖЕГОРОДСКИЙ ПЛАНЕТАРИЙ ИМ. Г.М.ГРЕЧКО МАУК", "manager": "Шишкина Юлия Николаевна", "documentType": "Реализация товаров и услуг", "amount": 99450.0}, {"date": "2026-05-29", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 21950.0}, {"date": "2026-05-30", "month": "2026-05", "client": "Розничный покупатель", "manager": "Подсобляева Светлана Вячеславовна", "documentType": "Отчет о розничных продажах", "amount": 37700.0}, {"date": "2026-05-31", "month": "2026-05", "client": "Музей космонавтики", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 19000.0}, {"date": "2026-05-31", "month": "2026-05", "client": "МОСКОВСКИЙ ЗООПАРК ГАУ", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 66130.0}, {"date": "2026-05-31", "month": "2026-05", "client": "ВДНХ КП", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 72169.5}, {"date": "2026-05-31", "month": "2026-05", "client": "РВБ ООО", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 151227.28}, {"date": "2026-05-31", "month": "2026-05", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 1465944.32}, {"date": "2026-05-31", "month": "2026-05", "client": "МУЗЕЙ ЗАПОВЕДНИК", "manager": "Шишкина Юлия Николаевна", "documentType": "Отчет комиссионера (агента) о продажах", "amount": 29320.0}, {"date": "2026-05-31", "month": "2026-05", "client": "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "manager": "Дубова Маргарита Викторовна", "documentType": "Реализация товаров и услуг", "amount": 50737.08}], "metrics": {"totalRevenue": 20724459.89, "averageCheck": 105737.04025510204, "checks": 196}, "filters": {"clients": ["АВТОР ПРО ООО", "АЙКРАФТ ООО", "АПЕЛЬБУРГ-ПРИНТ ООО", "Балаев Алим Русланович ИП", "ВДНХ АО", "ВДНХ КП", "ВЕГА АО ТГК", "Войдаков Дмитрий Евгеньевич ИП", "ВЫМПЕЛДЕНТ-А ООО", "ГЛОБУС ЧОУ", "ГРУППА-7 ООО", "Дерр Дмитрий Андреевич ИП", "Здорик Елена Анатольевна ИП", "ЗЕТА КОРП. ООО", "ИНТЕРНЕТ РЕШЕНИЯ ООО.", "КАМЧАТСКИЙ ЦЕНТР РАЗВИТИЯ ТВОРЧЕСТВА ДЕТЕЙ И ЮНОШЕСТВА РАССВЕТЫ КАМЧАТКИ КГБУДО", "КИСЛОРОДНАЯ ИМПЕРИЯ ООО", "Князев Алексей Александрович", "Кобрусев Степан Сергеевич", "КОЗЛОВ ВЛАДИСЛАВ ИП", "Лабохо Сергей Анатольевич", "МАПК (Е) АО", "МАРТ ООО", "МЕЧТАРИУМ ООО", "МОСКОВСКИЙ ЗООПАРК ГАУ", "МУЗЕЙ ЗАПОВЕДНИК", "Музей космонавтики", "Мыльцев Руслан Геннадьевич ИП", "МЭДЖИККИДС ООО", "НИЖЕГОРОДСКИЙ ПЛАНЕТАРИЙ ИМ. Г.М.ГРЕЧКО МАУК", "НИУ МЭИ ФГБОУ ВО", "ОДАС ФАРМА ООО", "ООО \"НАТУРАЛЬНЫЕ СЛАДОСТИ\"", "ПЛАНЕТАРИЙ АО", "ПОЛЕТ ООО", "ПОЛИМЕР МАРИН ООО", "Полные Полки-Сытые Волки, ООО.", "Пономарева Кристина Владимировна ИП", "РВБ ООО", "РЕШМА ФМБА РОССИИ ФГБУЗ МЦ", "РК ЦСКА АНО", "Розничный покупатель", "СКАЛКА ООО", "Сляднева Евгения Александровна", "Сотина Евгения Валерьевна", "ТД АСТРО-ДЕНТ ООО", "ФОРМУЛА С88 ООО", "ЦЫН ФЫН ООО", "ШКОЛА ЛЕТОВО ОАНО", "ЭДВАНС ООО", "ЭКОСТОМ ООО", "ЯРКО ООО"], "managers": ["Дубова Маргарита Викторовна", "Остапенко Виктория", "Подсобляева Светлана Вячеславовна", "Попов Евгений", "Шишкина Юлия Николаевна"], "documentTypes": ["Отчет комиссионера (агента) о продажах", "Отчет о розничных продажах", "Реализация товаров и услуг"], "years": ["2026"]}, "generatedAt": "19.06.2026 08:44:22"}</script>
+  <script>
+    const data = JSON.parse(document.getElementById('dashboardData').textContent);
+    const rub = new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 });
+    const num = new Intl.NumberFormat('ru-RU');
+    const monthName = new Intl.DateTimeFormat('ru-RU', { month: '2-digit', year: 'numeric' });
+    const chartState = {};
+
+    function fillSelect(id, values, allLabel) {
+      const select = document.getElementById(id);
+      select.innerHTML = [`<option value="__all">${allLabel}</option>`, ...values.map(value =>
+        `<option value="${escapeAttr(value)}">${escapeHtml(value)}</option>`
+      )].join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    function escapeAttr(value) { return escapeHtml(value); }
+
+    function setupFilters() {
+      fillSelect('yearFilter', data.filters.years, 'Все годы');
+      fillSelect('clientFilter', data.filters.clients, 'Все клиенты');
+      fillSelect('managerFilter', data.filters.managers, 'Все менеджеры');
+      fillSelect('docFilter', data.filters.documentTypes, 'Все документы');
+    }
+
+    function filteredRows() {
+      const year = document.getElementById('yearFilter').value;
+      const client = document.getElementById('clientFilter').value;
+      const manager = document.getElementById('managerFilter').value;
+      const doc = document.getElementById('docFilter').value;
+      return data.rows.filter(row =>
+        (year === '__all' || row.date.startsWith(year)) &&
+        (client === '__all' || row.client === client) &&
+        (manager === '__all' || row.manager === manager) &&
+        (doc === '__all' || row.documentType === doc)
+      );
+    }
+
+    function groupRows(rows, key) {
+      const map = new Map();
+      for (const row of rows) {
+        map.set(row[key], (map.get(row[key]) || 0) + row.amount);
+      }
+      return Array.from(map, ([label, value]) => ({ label, value }));
+    }
+
+    function monthRows(rows) {
+      return groupRows(rows, 'month')
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(item => ({ ...item, display: monthName.format(new Date(`${item.label}-01T00:00:00`)) }));
+    }
+
+    function topRows(rows, key, limit = 12) {
+      return groupRows(rows, key)
+        .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
+        .slice(0, limit);
+    }
+
+    function clientMonthMatrix(rows) {
+      const months = Array.from(new Set(rows.map(row => row.month))).sort();
+      const clients = new Map();
+      for (const row of rows) {
+        if (!clients.has(row.client)) {
+          clients.set(row.client, { client: row.client, total: 0, months: new Map() });
+        }
+        const item = clients.get(row.client);
+        item.total += row.amount;
+        item.months.set(row.month, (item.months.get(row.month) || 0) + row.amount);
+      }
+      return {
+        months: months.map(month => ({
+          key: month,
+          display: monthName.format(new Date(`${month}-01T00:00:00`))
+        })),
+        rows: Array.from(clients.values()).sort((a, b) => b.total - a.total || a.client.localeCompare(b.client))
+      };
+    }
+
+    function renderClientMonthTable(matrix) {
+      const table = document.getElementById('clientMonthTable');
+      if (!matrix.months.length || !matrix.rows.length) {
+        table.innerHTML = '<tbody><tr><td class="empty">данных нет</td></tr></tbody>';
+        return;
+      }
+      const head = `<thead><tr><th>Клиент</th>${matrix.months.map(month => `<th>${month.display}</th>`).join('')}<th class="total-col">Итого</th></tr></thead>`;
+      const body = matrix.rows.map(row => {
+        const cells = matrix.months.map(month => {
+          const value = row.months.get(month.key) || 0;
+          return `<td class="${value ? '' : 'zero'}">${value ? rub.format(value) : '0'}</td>`;
+        }).join('');
+        return `<tr><td>${escapeHtml(row.client)}</td>${cells}<td class="total-col">${rub.format(row.total)}</td></tr>`;
+      }).join('');
+      table.innerHTML = `${head}<tbody>${body}</tbody>`;
+    }
+
+    function compactValue(value) {
+      return new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+    }
+
+    function svgSize(svg, minWidth = 320, minHeight = 260) {
+      const rect = svg.getBoundingClientRect();
+      const width = Math.max(minWidth, Math.round(rect.width || 640));
+      const height = Math.max(minHeight, Math.round(rect.height || 320));
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      return { width, height };
+    }
+
+    function drawEmptySvg(svg, width, height) {
+      svg.innerHTML = `<text x="${width / 2}" y="${height / 2}" text-anchor="middle" fill="#667085" font-size="14">данных нет</text>`;
+    }
+
+    function drawLineChart(svgId, tooltipId, rows) {
+      const svg = document.getElementById(svgId);
+      const { width, height } = svgSize(svg, 340, 260);
+      if (!rows.length) return drawEmptySvg(svg, width, height);
+
+      const pad = { left: width < 460 ? 54 : 78, right: 24, top: 22, bottom: 54 };
+      const chartW = Math.max(80, width - pad.left - pad.right);
+      const chartH = Math.max(80, height - pad.top - pad.bottom);
+      const maxValue = Math.max(...rows.map(row => row.value), 1);
+      const step = rows.length === 1 ? chartW : chartW / (rows.length - 1);
+      const points = rows.map((row, index) => {
+        const x = rows.length === 1 ? pad.left + chartW / 2 : pad.left + step * index;
+        const y = pad.top + chartH - row.value / maxValue * chartH;
+        return { x, y, label: row.display, value: row.value };
+      });
+
+      const grid = Array.from({ length: 5 }, (_, i) => {
+        const y = pad.top + chartH * i / 4;
+        const value = maxValue * (1 - i / 4);
+        return `<line x1="${pad.left}" y1="${y}" x2="${pad.left + chartW}" y2="${y}" stroke="#d7dee8" stroke-width="1" />
+          <text x="${pad.left - 8}" y="${y + 4}" text-anchor="end" fill="#667085" font-size="12">${compactValue(value)}</text>`;
+      }).join('');
+      const linePoints = points.map(point => `${point.x},${point.y}`).join(' ');
+      const areaPoints = `${pad.left},${pad.top + chartH} ${linePoints} ${pad.left + chartW},${pad.top + chartH}`;
+      const circles = points.map(point => `
+        <circle cx="${point.x}" cy="${point.y}" r="4.5" fill="#2454a6">
+          <title>${escapeHtml(point.label)}: ${rub.format(point.value)}</title>
+        </circle>`).join('');
+      const labels = points.map((point, index) => {
+        if (rows.length > 12 && index % Math.ceil(rows.length / 12) !== 0) return '';
+        return `<text x="${point.x}" y="${pad.top + chartH + 20}" text-anchor="middle" fill="#182230" font-size="12">${escapeHtml(point.label)}</text>`;
+      }).join('');
+
+      svg.innerHTML = `
+        <polygon points="${areaPoints}" fill="rgba(36,84,166,.14)" />
+        ${grid}
+        <polyline points="${linePoints}" fill="none" stroke="#2454a6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        ${circles}
+        ${labels}`;
+    }
+
+    function drawBarChart(svgId, tooltipId, rows, color) {
+      const svg = document.getElementById(svgId);
+      const { width, height } = svgSize(svg, 340, 260);
+      if (!rows.length) return drawEmptySvg(svg, width, height);
+
+      const labelWidth = width < 520 ? 118 : 190;
+      const valueSpace = width < 520 ? 58 : 90;
+      const labelChars = width < 520 ? 15 : 26;
+      const pad = { left: labelWidth, right: valueSpace, top: 16, bottom: 20 };
+      const chartW = Math.max(90, width - pad.left - pad.right);
+      const chartH = Math.max(120, height - pad.top - pad.bottom);
+      const maxValue = Math.max(...rows.map(row => row.value), 1);
+      const gap = 7;
+      const barH = Math.max(12, (chartH - gap * (rows.length - 1)) / rows.length);
+      const bars = rows.map((row, index) => {
+        const y = pad.top + index * (barH + gap);
+        const barW = Math.max(3, row.value / maxValue * chartW);
+        const label = row.label.length > labelChars ? row.label.slice(0, labelChars - 1) + '…' : row.label;
+        return `
+          <text x="${pad.left - 10}" y="${y + barH / 2 + 4}" text-anchor="end" fill="#667085" font-size="12">${escapeHtml(label)}</text>
+          <rect x="${pad.left}" y="${y}" width="${barW}" height="${barH}" rx="4" fill="${color}">
+            <title>${escapeHtml(row.label)}: ${rub.format(row.value)}</title>
+          </rect>
+          <text x="${Math.min(width - 4, pad.left + barW + 7)}" y="${y + barH / 2 + 4}" fill="#182230" font-size="12">${compactValue(row.value)}</text>`;
+      }).join('');
+      svg.innerHTML = bars;
+    }
+
+    function render() {
+      const rows = filteredRows();
+      const total = rows.reduce((sum, row) => sum + row.amount, 0);
+      const checks = rows.length;
+      document.getElementById('totalRevenue').textContent = rub.format(total);
+      document.getElementById('averageCheck').textContent = rub.format(checks ? total / checks : 0);
+      document.getElementById('checksCount').textContent = num.format(checks);
+
+      const byMonth = monthRows(rows);
+      document.getElementById('monthRows').innerHTML = byMonth.length
+        ? byMonth.map(row => `<tr><td>${row.display}</td><td>${rub.format(row.value)}</td></tr>`).join('')
+        : '<tr><td colspan="2" class="empty">данных нет</td></tr>';
+
+      drawLineChart('monthChart', 'monthTooltip', byMonth);
+      drawBarChart('clientChart', 'clientTooltip', topRows(rows, 'client'), '#087f73');
+      drawBarChart('managerChart', 'managerTooltip', topRows(rows, 'manager'), '#b86b00');
+      renderClientMonthTable(clientMonthMatrix(rows));
+    }
+
+    setupFilters();
+    ['yearFilter', 'clientFilter', 'managerFilter', 'docFilter'].forEach(id => {
+      document.getElementById(id).addEventListener('change', render);
+    });
+    window.addEventListener('resize', render);
+    render();
+  </script>
+</body>
+</html>
